@@ -20,8 +20,9 @@ import os, sys, subprocess, time
 import numpy as np
 
 V, E, C, H = 128, 24, 8, 512
-G = 32                      # generated tokens (tb/tb_nano.sv must match)
 STEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 2000
+PROMPT_ARG = sys.argv[2] if len(sys.argv) > 2 else None
+G = int(sys.argv[3]) if len(sys.argv) > 3 else 32   # generated tokens (tb must match)
 BATCH = 256
 SEED = 1234
 rng = np.random.default_rng(SEED)
@@ -177,8 +178,10 @@ assert pbmax < 2**47, "logit pb overflow"
 print(f"[quant] max |logit pb| = {pbmax:.3e} (< 2^47 ok)")
 
 # ------------------------------------------------- golden autoregressive gen
-PROMPT = "First Ci" if text.startswith("First Ci") else text[:8]
-assert len(PROMPT) == C and all(ord(c) < 128 for c in PROMPT)
+PROMPT = PROMPT_ARG if PROMPT_ARG is not None else \
+    ("First Ci" if text.startswith("First Ci") else text[:8])
+assert len(PROMPT) == C and all(ord(c) < 128 for c in PROMPT), \
+    f"prompt must be exactly {C} ASCII chars, got {PROMPT!r}"
 
 def gen_tokens_int(prompt, n):
     toks = [ord(c) for c in prompt]

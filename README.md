@@ -45,6 +45,25 @@ make synth     # Yosys synthesis on Nangate45: out/synth_stat.txt
 make pnr       # OpenROAD-flow-scripts in Docker: floorplan→route→STA→GDS
 ```
 
+## Play with it
+
+```sh
+make sim PROMPT="To be or" G=48   # your own 8-char prompt, tokens stream live
+make sim STEPS=8000               # train ~4x longer: noticeably better prose
+```
+
+- **Change the model**: `V, E, C, H` at the top of `sw/build.py` (keep dims
+  multiples of 64). Retrain → new area/timing via `make synth`.
+- **Break the clock**: set 5.0 ns in `pnr/constraint.sdc` and `make pnr` —
+  fmax is 194.65 MHz, so 200 MHz should *fail* timing; 5.5 ns should pass.
+- **Weaken the quantization**: lower the clip bound in `quant_w()` and watch
+  generated text degrade (still bit-exact — the golden model degrades too).
+- **Waveforms**: add `$dumpvars;` in `tb/tb_nano.sv`, open the VCD in GTKWave.
+- **Zoom the layout**: `pnr/dump_png.py` renders the GDS; or open
+  `pnr/results/.../6_final.gds` in KLayout.
+
+G ≤ 50 in the current program RAM (256 instrs = 5/token).
+
 ## Layout
 
 ```

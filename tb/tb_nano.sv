@@ -2,14 +2,24 @@
 // compare generated tokens bit-exactly against the golden model.
 `timescale 1ns/1ps
 module tb;
+`ifdef GEN_TOKENS
+    localparam G      = `GEN_TOKENS;
+`else
     localparam G      = 32;   // generated tokens (must match sw/build.py)
+`endif
     localparam PLEN   = 8;    // prompt length = context size
 
     reg  clk = 0, rst_n = 1;
     wire done;
-    nano_accel dut (.clk(clk), .rst_n(rst_n), .done(done));
+    wire out_valid;
+    wire [7:0] out_tok;
+    nano_accel dut (.clk(clk), .rst_n(rst_n), .done(done),
+                    .out_valid(out_valid), .out_tok(out_tok));
 
     always #5 clk = ~clk;   // 100 MHz
+
+    // live token stream from the chip's output interface
+    always @(posedge clk) if (rst_n && out_valid) $write("%c", out_tok);
 
     reg [7:0] expected [0:G-1];
     integer i, errors;
@@ -25,10 +35,12 @@ module tb;
 
         #1  rst_n = 0;
         #20 rst_n = 1;
+        $write("streaming live    = \"");
 
         wait (done);
         #10;
 
+        $display("\"");
         $display("----------------------------------------------------");
         $display("DONE: %0d cycles for %0d generated tokens", dut.cycles, G);
         $display("cycles/token      = %0d", dut.cycles / G);
