@@ -1,0 +1,19 @@
+# Yosys synthesis of nano_accel against Nangate 45nm (typical corner).
+# SRAMs are blackboxed and reported separately (as in the blog post:
+# "1.46M standard cells, 0.277 MB of SRAM" are separate line items).
+read_liberty -lib syn/NangateOpenCellLibrary_typical.lib
+read_verilog -sv rtl/ram.sv rtl/dot64.sv rtl/nano_accel.sv
+hierarchy -check -top nano_accel
+
+proc; opt
+fsm; opt
+memory; opt
+techmap; opt
+flatten
+dfflibmap -liberty syn/NangateOpenCellLibrary_typical.lib
+abc -liberty syn/NangateOpenCellLibrary_typical.lib
+opt_clean -purge
+
+tee -o out/synth_stat.txt stat -liberty syn/NangateOpenCellLibrary_typical.lib
+tee -o out/synth_check.txt check
+write_verilog -noattr out/nano_accel_netlist.v
