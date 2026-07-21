@@ -19,7 +19,10 @@ Numerics contract with the RTL (must stay in sync):
 import os, sys, subprocess, time
 import numpy as np
 
-V, E, C, H = 128, 24, 8, 512
+V = int(os.environ.get("NANO_V", 128))
+E = int(os.environ.get("NANO_E", 24))
+C = int(os.environ.get("NANO_C", 8))
+H = int(os.environ.get("NANO_H", 512))
 STEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 2000
 PROMPT_ARG = sys.argv[2] if len(sys.argv) > 2 else None
 G = int(sys.argv[3]) if len(sys.argv) > 3 else 32   # generated tokens (tb must match)
@@ -243,16 +246,21 @@ def instr(op, flags=0, sh=0, n=0, m=0, a0=0, a1=0, a2=0, a3=0, a4=0):
     return "%032x" % v
 
 def emit_isram():
+    assert (C * E) % 64 == 0 and H % 64 == 0, "dims must pack into 64-lane words"
+    w2_base = H * ((C * E) // 64)                 # wsram word offsets per layer
+    w3_base = w2_base + H * (H // 64)
+    h1_base = (C * E) // 64 + 1                   # xsram word offsets
+    h2_base = h1_base + H // 64
     prog = [instr(1, a0=C)]                       # SETLEN 8
     for _ in range(G):
         prog += [
             instr(2, n=C, m=E, a0=0, a1=0),                   # GATHER -> X@0
-            instr(3, flags=1, sh=sh1, n=C*E, m=H,             # L1 -> H1@4
-                  a0=0, a1=0, a2=4, a3=0, a4=0),
-            instr(3, flags=1, sh=sh2, n=H, m=H,               # L2 -> H2@12
-                  a0=1536, a1=4, a2=12, a3=512, a4=512),
+            instr(3, flags=1, sh=sh1, n=C*E, m=H,             # L1 -> H1
+                  a0=0, a1=0, a2=h1_base, a3=0, a4=0),
+            instr(3, flags=1, sh=sh2, n=H, m=H,               # L2 -> H2
+                  a0=w2_base, a1=h1_base, a2=h2_base, a3=H, a4=H),
             instr(3, flags=2, sh=sh3, n=H, m=V,               # HEAD -> LBUF
-                  a0=5632, a1=12, a3=1024, a4=1024),
+                  a0=w3_base, a1=h2_base, a3=2*H, a4=2*H),
             instr(4, m=V),                                    # ARGMAX append
         ]
     prog += [instr(7)]                                        # HALT

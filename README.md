@@ -84,3 +84,28 @@ out/    generated: hex images, netlist, logs, layout render
   A 2B-param model at 8,700 tok/s would need ~8.7 TB/s — HBM-class, not
   45 nm. SRAM-resident is the honest regime (same one the Kimi K3 blog post
   used: 0.277 MB SRAM, >8,700 tok/s).
+
+## Tiny Tapeout variant (`tt/`)
+
+A manufacturable port for [Tiny Tapeout](https://tinytapeout.com) (SKY130,
+4x2 tiles): all model tensors stream from the 8 MB QSPI PSRAM Pmod instead of
+on-chip SRAM. Since the shared 4-bit QSPI bus delivers at most one INT4
+weight per SCK, the 64-MAC array collapses to **one MAC + 8 accumulators**
+running at line rate, with a bit-serial drain and argmax fused into the head
+layer. The PSRAM image (built by `tt/sw/pack.py`) is self-describing — dims,
+shifts, prompt, and QSPI sampling latency in a 64-byte header — so the taped-
+out chip can run any model that fits in PSRAM.
+
+```sh
+make tt-sim    # small model (H=128): pack image, run TT top vs golden — bit-exact
+```
+
+Measured in sim @ 47.6 MHz (21 ns), bit-exact in both cases: 232,159
+cycles/token (~205 tok/s) for the 28 KiB test model; 1,520,137 cycles/token
+(~31 tok/s) for the full 208 KiB model (vs 14,604 tok/s for the on-chip
+original — the price of a 4-bit bus). Hardened locally with the TT
+LibreLane flow: setup and hold met in all 9 corners (worst setup slack
++0.89 ns at ss_100C_1v60), 0 routing DRC / 0 magic DRC / 0 antenna
+violations, 71.6% utilization on 4x2 tiles, 5.2 mW. Submission: push `tt/`
+as its own repo (it mirrors the official `ttsky-verilog-template`) and
+enter it at https://app.tinytapeout.com/.

@@ -39,7 +39,16 @@ pnr:
 	  openroad/orfs:latest \
 	  make DESIGN_CONFIG=/work/pnr/config.mk
 
-clean:
-	rm -f out/tb out/tb_compile_check
+# --- Tiny Tapeout variant (tt/): streams the model from QSPI PSRAM ---
+# make tt-sim   - small model (H=128), pack PSRAM image, verify bit-exact
+tt-sim:
+	NANO_H=128 python3 sw/build.py 400 "$(PROMPT)" 8
+	python3 tt/sw/pack.py
+	cd tt/test && iverilog -g2012 -o tb_local_sim \
+	  ../src/project.v ../src/qspi_ctrl.v ../src/nano_tt_core.v \
+	  psram_model.v tb_local.v && vvp tb_local_sim
 
-.PHONY: vectors sim synth pnr clean
+clean:
+	rm -f out/tb out/tb_compile_check tt/test/tb_local_sim
+
+.PHONY: vectors sim synth pnr tt-sim clean
