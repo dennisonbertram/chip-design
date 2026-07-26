@@ -100,12 +100,15 @@ out chip can run any model that fits in PSRAM.
 make tt-sim    # small model (H=128): pack image, run TT top vs golden — bit-exact
 ```
 
-Measured in sim @ 47.6 MHz (21 ns), bit-exact in both cases: 232,159
-cycles/token (~205 tok/s) for the 28 KiB test model; 1,520,137 cycles/token
-(~31 tok/s) for the full 208 KiB model (vs 14,604 tok/s for the on-chip
-original — the price of a 4-bit bus). Hardened locally with the TT
-LibreLane flow: setup and hold met in all 9 corners (worst setup slack
-+0.89 ns at ss_100C_1v60), 0 routing DRC / 0 magic DRC / 0 antenna
-violations, 71.6% utilization on 4x2 tiles, 5.2 mW. Submission: push `tt/`
+Measured in sim @ 47.6 MHz (21 ns), steady state, bit-exact in both cases:
+232,121 cycles/token (205 tok/s) for the 28 KiB test model; 1,520,899
+cycles/token (31 tok/s) for the full 208 KiB model (vs 14,604 tok/s for the
+on-chip original — the price of a 4-bit bus). The first token costs an extra
+one-off 10,271 cycles for the power-up wait and header read. Hardened with the
+TT LibreLane flow (numbers below from Tiny Tapeout's own CI on the submitted
+commit): setup and hold met in all 9 corners (worst setup slack +1.78 ns at
+max_ss_100C_1v60, worst hold +0.11 ns), 0 routing DRC / 0 magic DRC / 0
+antenna violations, 0 LVS errors, 71.9% utilization on 4x2 tiles, 5.2 mW.
+Clock floor is 37.4 MHz (PSRAM tCEM); run at 40 MHz or above. Submission: push `tt/`
 as its own repo (it mirrors the official `ttsky-verilog-template`) and
 enter it at https://app.tinytapeout.com/.
