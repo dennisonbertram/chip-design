@@ -5,7 +5,7 @@ layout with open-source tools (Yosys, Icarus Verilog, OpenROAD-flow-scripts) on
 the open Nangate 45nm library. It runs a real character-level language model
 trained on tiny-shakespeare.
 
-**Status: verified in simulation and laid out. It has not been fabricated.**
+**Status: verified in simulation and laid out. Fabrication is not documented here.**
 Nothing in this repo shows a tapeout or shuttle submission. The `tt/` variant
 is prepared for Tiny Tapeout but is not recorded here as submitted.
 
@@ -14,8 +14,8 @@ is prepared for Tiny Tapeout but is not recorded here as submitted.
 ## Results
 
 Numbers below come from the author's local `make sim`, `make synth` and
-`make pnr` runs. The reports and GDS are generated under `out/` and
-`pnr/results/` and are not committed, so rerun the commands to reproduce them.
+`make pnr` runs. The reports and GDS are generated under `out/`,
+`pnr/results/`, `pnr/reports/` and `pnr/logs/` and are not committed, so rerun the commands to reproduce them.
 
 | | |
 |---|---|
